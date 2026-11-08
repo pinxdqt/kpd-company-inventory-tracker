@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const inventorySchema = new mongoose.Schema(
@@ -43,16 +44,6 @@ const inventorySchema = new mongoose.Schema(
         supplier: {
             type: String,
             default: ""
-        },
-
-        department: {
-            type: String,
-            required: true
-        },
-
-        minimumStock: {
-            type: Number,
-            default: 5
         }
     },
     {

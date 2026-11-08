@@ -1,6 +1,5 @@
-
-import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import {
@@ -9,34 +8,87 @@ import {
     Boxes,
     AlertTriangle,
     LogOut,
-    Search,
-    Bell,
     Plus,
+    RefreshCw,
     ArrowUpRight,
-    RefreshCw
+    Search,
+    X
 } from "lucide-react";
 
 import "../App.css";
 
+const API_URL = (
+    import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
 function Dashboard() {
     const navigate = useNavigate();
 
-    const [summary, setSummary] = useState({
-        totalProducts: 0,
-        totalStock: 0,
-        lowStock: 0
-    });
-
-    const [recentInventory, setRecentInventory] = useState([]);
+    const [inventory, setInventory] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [recentLoading, setRecentLoading] = useState(true);
-    const [recentError, setRecentError] = useState("");
-
-    const [lowStockProducts, setLowStockProducts] = useState([]);
-    const [alertLoading, setAlertLoading] = useState(true);
-    const [alertError, setAlertError] = useState("");
+    const [error, setError] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
 
     const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+    // GET INVENTORY
+    const fetchInventory = async () => {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            navigate("/");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError("");
+
+            const response = await axios.get(
+                `${API_URL}/api/inventory`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            const products = Array.isArray(response.data)
+                ? response.data
+                : response.data.inventory || response.data.items || [];
+
+            const sortedProducts = [...products].sort((a, b) =>
+                new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+            );
+
+            setInventory(sortedProducts);
+
+        } catch (err) {
+            console.error(
+                "Dashboard loading error:",
+                err.response?.data || err.message
+            );
+
+            if (err.response?.status === 401) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                navigate("/");
+                return;
+            }
+
+            setError(
+                err.response?.data?.message ||
+                "Unable to load inventory. Please check your backend connection."
+            );
+
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchInventory();
+    }, []);
 
     // LOGOUT
     const handleLogout = () => {
@@ -45,133 +97,69 @@ function Dashboard() {
         navigate("/");
     };
 
-    // GET DASHBOARD SUMMARY
-    const fetchSummary = async () => {
-        try {
-            const token = localStorage.getItem("token");
+    // TOTAL PRODUCTS
+    const totalProducts = inventory.length;
 
-            const response = await axios.get(
-                "http://localhost:5000/api/inventory/summary",
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
+    // TOTAL STOCK
+    const totalStock = inventory.reduce(
+        (total, item) => total + Number(item.quantity || 0),
+        0
+    );
 
-            setSummary(response.data);
-        } catch (error) {
-            console.error(
-                "Failed to load dashboard summary:",
-                error.response?.data || error.message
-            );
-        } finally {
-            setLoading(false);
+    // PRODUCTS NEEDING ATTENTION (0 TO 10)
+    const lowStockProducts = inventory.filter((item) => {
+        const quantity = Number(item.quantity || 0);
+        return quantity >= 0 && quantity <= 10;
+    });
+
+    // RECENT INVENTORY
+    const recentInventory = inventory.slice(0, 5);
+
+    // STOCK STATUS
+    const getStockStatus = (item) => {
+        const quantity = Number(item.quantity || 0);
+
+        if (quantity <= 0) {
+            return {
+                label: "No Stock",
+                background: "#fee2e2",
+                color: "#b91c1c"
+            };
         }
-    };
 
-    // GET RECENT INVENTORY
-    const fetchRecentInventory = async () => {
-        try {
-            setRecentLoading(true);
-            setRecentError("");
-
-            const token = localStorage.getItem("token");
-
-            const response = await axios.get(
-                "http://localhost:5000/api/inventory",
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
-
-            const products = Array.isArray(response.data)
-                ? response.data
-                : response.data.inventory ||
-                  response.data.items ||
-                  [];
-
-            const sortedProducts = [...products].sort((a, b) => {
-                return (
-                    new Date(b.createdAt || 0) -
-                    new Date(a.createdAt || 0)
-                );
-            });
-
-            setRecentInventory(sortedProducts.slice(0, 5));
-        } catch (error) {
-            console.error(
-                "Failed to load recent inventory:",
-                error.response?.data || error.message
-            );
-
-            setRecentError(
-                error.response?.data?.message ||
-                "Unable to load recent inventory products."
-            );
-        } finally {
-            setRecentLoading(false);
+        if (quantity <= 10) {
+            return {
+                label: "Restock Soon!",
+                background: "#fef3c7",
+                color: "#92400e"
+            };
         }
+
+        return {
+            label: "Enough Stock",
+            background: "#dcfce7",
+            color: "#166534"
+        };
     };
 
-    // GET LOW STOCK PRODUCTS
-    const fetchLowStockProducts = async () => {
-        try {
-            setAlertLoading(true);
-            setAlertError("");
+    // SEARCH INVENTORY
+    const searchResults = inventory.filter((item) => {
+        const search = searchTerm.toLowerCase().trim();
 
-            const token = localStorage.getItem("token");
+        return (
+            String(item.itemCode || "").toLowerCase().includes(search) ||
+            String(item.itemName || "").toLowerCase().includes(search) ||
+            String(item.category || "").toLowerCase().includes(search)
+        );
+    });
 
-            const response = await axios.get(
-                "http://localhost:5000/api/inventory",
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
-
-            const products = Array.isArray(response.data)
-                ? response.data
-                : response.data.inventory ||
-                  response.data.items ||
-                  [];
-
-            const lowStockItems = products.filter((item) => {
-                const quantity = Number(item.quantity || 0);
-                const minimumStock = Number(item.minimumStock ?? 5);
-
-                return quantity <= minimumStock;
-            });
-
-            setLowStockProducts(lowStockItems);
-        } catch (error) {
-            console.error(
-                "Failed to load low stock alerts:",
-                error.response?.data || error.message
-            );
-
-            setAlertError(
-                error.response?.data?.message ||
-                "Unable to load low stock alerts."
-            );
-        } finally {
-            setAlertLoading(false);
-        }
+    // FORMAT PRICE
+    const formatPrice = (price) => {
+        return Number(price || 0).toLocaleString("en-PH", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
     };
-
-    // REFRESH DASHBOARD
-    const refreshDashboard = () => {
-        fetchSummary();
-        fetchRecentInventory();
-        fetchLowStockProducts();
-    };
-
-    useEffect(() => {
-        refreshDashboard();
-    }, []);
 
     return (
         <div className="dashboard-layout">
@@ -185,19 +173,17 @@ function Dashboard() {
                     </div>
 
                     <div>
-                        <h2>KPD Company Inventory Tracker</h2>
+                        <h2>KPD Store Inventory Tracker</h2>
                     </div>
                 </div>
 
-                <p className="sidebar-label">
-                    MAIN MENU
-                </p>
+                <p className="sidebar-label">MAIN MENU</p>
 
                 <nav className="sidebar-nav">
 
                     <a
-                        className="nav-link active"
                         href="/dashboard"
+                        className="nav-link active"
                         onClick={(e) => {
                             e.preventDefault();
                             navigate("/dashboard");
@@ -208,8 +194,8 @@ function Dashboard() {
                     </a>
 
                     <a
-                        className="nav-link"
                         href="/inventory-list"
+                        className="nav-link"
                         onClick={(e) => {
                             e.preventDefault();
                             navigate("/inventory-list");
@@ -224,10 +210,9 @@ function Dashboard() {
                 <div className="sidebar-bottom">
 
                     <div className="sidebar-user">
+
                         <div className="user-avatar">
-                            {(user.name || "Admin")
-                                .charAt(0)
-                                .toUpperCase()}
+                            {(user.name || "Admin").charAt(0).toUpperCase()}
                         </div>
 
                         <div className="user-details">
@@ -237,6 +222,7 @@ function Dashboard() {
 
                             <span>Administrator</span>
                         </div>
+
                     </div>
 
                     <button
@@ -254,193 +240,93 @@ function Dashboard() {
             {/* MAIN CONTENT */}
             <main className="dashboard-main">
 
+                {/* TOP BAR WITH SEARCH */}
                 <header className="dashboard-topbar">
+
                     <div>
-                        <p>
-                            Manage and monitor your company inventory
-                        </p>
+                        <p>Manage and monitor your store inventory</p>
                     </div>
 
-                    <div className="topbar-actions">
+                    <div className="dashboard-search">
 
-                        <div className="dashboard-search">
-                            <Search size={18} />
+                        <Search size={19} />
 
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                            />
-                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search item code, product name, or category..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
 
-                        <button
-                            className="notification-button"
-                            aria-label="Notifications"
-                        >
-                            <Bell size={20} />
-                        </button>
+                        {searchTerm && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchTerm("")}
+                                title="Clear search"
+                            >
+                                <X size={18} />
+                            </button>
+                        )}
 
                     </div>
+
                 </header>
 
                 <section className="dashboard-page-content">
 
-                    {/* WELCOME SECTION */}
+                    {/* WELCOME */}
                     <div className="welcome-banner">
+
                         <div>
-                            <span className="welcome-tag">
+                            <span
+                                className="welcome-tag"
+                                style={{
+                                    fontSize: "20px",
+                                    letterSpacing: "1.5px",
+                                    fontWeight: "600"
+                                }}
+                            >
                                 INVENTORY MANAGEMENT
                             </span>
-
-                            <p>
-                                Here's what's happening with your company inventory today
-                            </p>
                         </div>
 
                         <div className="welcome-icon">
                             <Boxes size={65} />
                         </div>
-                    </div>
-
-                    {/* INVENTORY OVERVIEW */}
-                    <div className="section-heading">
-                        <div>
-                            <h2>Inventory Overview</h2>
-                        </div>
-
-                        <span className="overview-status">
-                            Live Overview
-                        </span>
-                    </div>
-
-                    {/* SUMMARY CARDS */}
-                    <div className="summary-grid">
-
-                        {/* TOTAL PRODUCTS */}
-                        <div className="summary-card">
-                            <div className="summary-card-top">
-                                <div className="summary-icon blue">
-                                    <Package size={23} />
-                                </div>
-
-                                <ArrowUpRight
-                                    size={19}
-                                    className="summary-arrow"
-                                />
-                            </div>
-
-                            <h3>
-                                {loading ? "..." : summary.totalProducts}
-                            </h3>
-
-                            <p>Total Products</p>
-                            <span>All registered items</span>
-                        </div>
-
-                        {/* TOTAL STOCK */}
-                        <div className="summary-card">
-                            <div className="summary-card-top">
-                                <div className="summary-icon purple">
-                                    <Boxes size={23} />
-                                </div>
-
-                                <ArrowUpRight
-                                    size={19}
-                                    className="summary-arrow"
-                                />
-                            </div>
-
-                            <h3>
-                                {loading ? "..." : summary.totalStock}
-                            </h3>
-
-                            <p>Total Stock</p>
-                            <span>Available item quantity</span>
-                        </div>
-
-                        {/* LOW STOCK */}
-                        <div className="summary-card">
-                            <div className="summary-card-top">
-                                <div className="summary-icon orange">
-                                    <AlertTriangle size={23} />
-                                </div>
-
-                                <ArrowUpRight
-                                    size={19}
-                                    className="summary-arrow"
-                                />
-                            </div>
-
-                            <h3>
-                                {loading ? "..." : summary.lowStock}
-                            </h3>
-
-                            <p>Low Stock Items</p>
-                            <span>Items needing attention</span>
-                        </div>
 
                     </div>
 
-                    {/* RECENT INVENTORY */}
-                    <div className="inventory-panel">
+                    {/* SEARCH RESULTS */}
+                    {searchTerm.trim() !== "" && (
 
-                        <div className="panel-heading">
-                            <div>
-                                <h2>Recent Inventory</h2>
+                        <div
+                            className="inventory-panel"
+                            style={{ marginBottom: "25px" }}
+                        >
+
+                            <div className="panel-heading">
+                                <div>
+                                    <h2>Search Results</h2>
+
+                                    <p>
+                                        {searchResults.length} matching product(s) found.
+                                    </p>
+                                </div>
                             </div>
 
-                            <div style={{
-                                display: "flex",
-                                gap: "10px",
-                                flexWrap: "wrap"
-                            }}>
-                                <button
-                                    onClick={refreshDashboard}
-                                    title="Refresh dashboard"
-                                    disabled={recentLoading || alertLoading}
-                                >
-                                    <RefreshCw size={18} />
-                                </button>
+                            {searchResults.length > 0 ? (
 
-                                <button
-                                    className="add-inventory-button"
-                                    onClick={() => navigate("/inventory")}
-                                >
-                                    <Plus size={18} />
-                                    Add New Item
-                                </button>
-                            </div>
-                        </div>
+                                <div style={{
+                                    width: "100%",
+                                    overflowX: "auto"
+                                }}>
 
-                        {recentLoading && (
-                            <p style={{ padding: "25px" }}>
-                                Loading recent inventory...
-                            </p>
-                        )}
-
-                        {!recentLoading && recentError && (
-                            <div style={{ padding: "25px" }}>
-                                <p style={{ color: "red" }}>
-                                    {recentError}
-                                </p>
-
-                                <button onClick={fetchRecentInventory}>
-                                    Try Again
-                                </button>
-                            </div>
-                        )}
-
-                        {!recentLoading && !recentError && (
-                            <div style={{
-                                width: "100%",
-                                overflowX: "auto",
-                                marginTop: "15px"
-                            }}>
-                                {recentInventory.length > 0 ? (
                                     <table style={{
                                         width: "100%",
                                         borderCollapse: "collapse",
                                         textAlign: "left"
                                     }}>
+
                                         <thead>
                                             <tr>
                                                 {[
@@ -465,8 +351,9 @@ function Dashboard() {
                                         </thead>
 
                                         <tbody>
-                                            {recentInventory.map((item) => (
+                                            {searchResults.map((item) => (
                                                 <tr key={item._id}>
+
                                                     <td style={{ padding: "14px 10px" }}>
                                                         {item.itemCode}
                                                     </td>
@@ -484,37 +371,270 @@ function Dashboard() {
                                                     </td>
 
                                                     <td style={{ padding: "14px 10px" }}>
-                                                        ₱{Number(item.price || 0).toLocaleString("en-PH", {
-                                                            minimumFractionDigits: 2,
-                                                            maximumFractionDigits: 2
-                                                        })}
+                                                        ₱{formatPrice(item.price)}
                                                     </td>
+
                                                 </tr>
                                             ))}
                                         </tbody>
+
                                     </table>
-                                ) : (
-                                    <div className="empty-inventory">
-                                        <div className="empty-icon">
-                                            <Package size={35} />
-                                        </div>
 
-                                        <h3>No Inventory Products Yet</h3>
+                                </div>
 
-                                        <p>
-                                            Add your first product to see it displayed here.
-                                        </p>
+                            ) : (
+                                <p style={{ padding: "25px" }}>
+                                    No matching products found.
+                                </p>
+                            )}
 
-                                        <button
-                                            className="add-inventory-button"
-                                            onClick={() => navigate("/inventory")}
-                                        >
-                                            <Plus size={18} />
-                                            Add New Item
-                                        </button>
-                                    </div>
-                                )}
+                        </div>
+                    )}
+
+                    {/* PAGE HEADING */}
+                    <div className="section-heading">
+
+                        <div>
+                            <h2>Inventory Overview</h2>
+                        </div>
+
+                        <span className="overview-status">
+                            Live Overview
+                        </span>
+
+                    </div>
+
+                    {/* ERROR MESSAGE */}
+                    {error && (
+
+                        <div style={{
+                            background: "#fee2e2",
+                            color: "#991b1b",
+                            padding: "14px",
+                            borderRadius: "8px",
+                            marginBottom: "20px"
+                        }}>
+
+                            {error}
+
+                            <button
+                                onClick={fetchInventory}
+                                style={{ marginLeft: "12px" }}
+                            >
+                                Try Again
+                            </button>
+
+                        </div>
+                    )}
+
+                    {/* SUMMARY CARDS */}
+                    <div className="summary-grid">
+
+                        {/* TOTAL PRODUCTS */}
+                        <div className="summary-card">
+
+                            <div className="summary-card-top">
+                                <div className="summary-icon blue">
+                                    <Package size={23} />
+                                </div>
+
+                                <ArrowUpRight
+                                    size={19}
+                                    className="summary-arrow"
+                                />
                             </div>
+
+                            <h3>{loading ? "..." : totalProducts}</h3>
+
+                            <p>Total Products</p>
+
+                            <span>All registered items</span>
+
+                        </div>
+
+                        {/* TOTAL STOCK */}
+                        <div className="summary-card">
+
+                            <div className="summary-card-top">
+                                <div className="summary-icon purple">
+                                    <Boxes size={23} />
+                                </div>
+
+                                <ArrowUpRight
+                                    size={19}
+                                    className="summary-arrow"
+                                />
+                            </div>
+
+                            <h3>{loading ? "..." : totalStock}</h3>
+
+                            <p>Total Stock</p>
+
+                            <span>Available item quantity</span>
+
+                        </div>
+
+                        {/* ITEMS NEEDING ATTENTION */}
+                        <div className="summary-card">
+
+                            <div className="summary-card-top">
+                                <div className="summary-icon orange">
+                                    <AlertTriangle size={23} />
+                                </div>
+
+                                <ArrowUpRight
+                                    size={19}
+                                    className="summary-arrow"
+                                />
+                            </div>
+
+                            <h3>
+                                {loading ? "..." : lowStockProducts.length}
+                            </h3>
+
+                            <p>Items Needing Attention</p>
+
+                            <span>Products with 10 or fewer items</span>
+
+                        </div>
+
+                    </div>
+
+                    {/* RECENT INVENTORY */}
+                    <div className="inventory-panel">
+
+                        <div className="panel-heading">
+
+                            <div>
+                                <h2>Recent Inventory</h2>
+                                <p>Your latest added products.</p>
+                            </div>
+
+                            <div style={{
+                                display: "flex",
+                                gap: "10px",
+                                flexWrap: "wrap"
+                            }}>
+
+                                <button
+                                    onClick={fetchInventory}
+                                    disabled={loading}
+                                    title="Refresh dashboard"
+                                >
+                                    <RefreshCw size={18} />
+                                </button>
+
+                                <button
+                                    className="add-inventory-button"
+                                    onClick={() => navigate("/inventory")}
+                                >
+                                    <Plus size={18} />
+                                    Add New Item
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        {loading ? (
+
+                            <p style={{ padding: "25px" }}>
+                                Loading inventory...
+                            </p>
+
+                        ) : recentInventory.length > 0 ? (
+
+                            <div style={{
+                                width: "100%",
+                                overflowX: "auto",
+                                marginTop: "15px"
+                            }}>
+
+                                <table style={{
+                                    width: "100%",
+                                    borderCollapse: "collapse",
+                                    textAlign: "left"
+                                }}>
+
+                                    <thead>
+                                        <tr>
+                                            {[
+                                                "Item Code",
+                                                "Product Name",
+                                                "Category",
+                                                "Quantity",
+                                                "Price"
+                                            ].map((heading) => (
+                                                <th
+                                                    key={heading}
+                                                    style={{
+                                                        padding: "14px 10px",
+                                                        borderBottom: "1px solid #ddd",
+                                                        whiteSpace: "nowrap"
+                                                    }}
+                                                >
+                                                    {heading}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {recentInventory.map((item) => (
+                                            <tr key={item._id}>
+
+                                                <td style={{ padding: "14px 10px" }}>
+                                                    {item.itemCode}
+                                                </td>
+
+                                                <td style={{ padding: "14px 10px" }}>
+                                                    {item.itemName}
+                                                </td>
+
+                                                <td style={{ padding: "14px 10px" }}>
+                                                    {item.category}
+                                                </td>
+
+                                                <td style={{ padding: "14px 10px" }}>
+                                                    {item.quantity} {item.unit}
+                                                </td>
+
+                                                <td style={{ padding: "14px 10px" }}>
+                                                    ₱{formatPrice(item.price)}
+                                                </td>
+
+                                            </tr>
+                                        ))}
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+
+                        ) : (
+
+                            <div className="empty-inventory">
+
+                                <div className="empty-icon">
+                                    <Package size={35} />
+                                </div>
+
+                                <h3>No Inventory Products Yet</h3>
+
+                                <p>
+                                    Add your first product to display it here.
+                                </p>
+
+                                <button
+                                    className="add-inventory-button"
+                                    onClick={() => navigate("/inventory")}
+                                >
+                                    <Plus size={18} />
+                                    Add New Item
+                                </button>
+
+                            </div>
+
                         )}
 
                     </div>
@@ -526,6 +646,7 @@ function Dashboard() {
                     >
 
                         <div className="panel-heading">
+
                             <div>
                                 <h2>
                                     <AlertTriangle
@@ -546,7 +667,7 @@ function Dashboard() {
                             </div>
 
                             <span style={{
-                                backgroundColor: lowStockProducts.length > 0
+                                background: lowStockProducts.length > 0
                                     ? "#fef3c7"
                                     : "#dcfce7",
                                 color: lowStockProducts.length > 0
@@ -557,140 +678,123 @@ function Dashboard() {
                                 fontSize: "13px",
                                 fontWeight: "600"
                             }}>
-                                {alertLoading
+                                {loading
                                     ? "Checking..."
                                     : `${lowStockProducts.length} Products`}
                             </span>
+
                         </div>
 
-                        {alertLoading && (
+                        {loading ? (
+
                             <p style={{ padding: "25px" }}>
                                 Checking product stock levels...
                             </p>
-                        )}
 
-                        {!alertLoading && alertError && (
-                            <div style={{ padding: "25px" }}>
-                                <p style={{ color: "red" }}>
-                                    {alertError}
-                                </p>
+                        ) : lowStockProducts.length > 0 ? (
 
-                                <button onClick={fetchLowStockProducts}>
-                                    Try Again
-                                </button>
-                            </div>
-                        )}
-
-                        {!alertLoading && !alertError && (
                             <div style={{
                                 width: "100%",
                                 overflowX: "auto",
                                 marginTop: "15px"
                             }}>
-                                {lowStockProducts.length > 0 ? (
-                                    <table style={{
-                                        width: "100%",
-                                        borderCollapse: "collapse",
-                                        textAlign: "left"
-                                    }}>
-                                        <thead>
-                                            <tr>
-                                                {[
-                                                    "Item Code",
-                                                    "Product Name",
-                                                    "Department",
-                                                    "Available Quantity",
-                                                    "Minimum Stock",
-                                                    "Status"
-                                                ].map((heading) => (
-                                                    <th
-                                                        key={heading}
-                                                        style={{
-                                                            padding: "14px 10px",
-                                                            borderBottom: "1px solid #ddd",
+
+                                <table style={{
+                                    width: "100%",
+                                    borderCollapse: "collapse",
+                                    textAlign: "left"
+                                }}>
+
+                                    <thead>
+                                        <tr>
+                                            {[
+                                                "Item Code",
+                                                "Product Name",
+                                                "Available Quantity",
+                                                "Status"
+                                            ].map((heading) => (
+                                                <th
+                                                    key={heading}
+                                                    style={{
+                                                        padding: "14px 10px",
+                                                        borderBottom: "1px solid #ddd",
+                                                        whiteSpace: "nowrap"
+                                                    }}
+                                                >
+                                                    {heading}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {lowStockProducts.map((item) => {
+
+                                            const status = getStockStatus(item);
+
+                                            return (
+                                                <tr key={item._id}>
+
+                                                    <td style={{ padding: "14px 10px" }}>
+                                                        {item.itemCode}
+                                                    </td>
+
+                                                    <td style={{ padding: "14px 10px" }}>
+                                                        {item.itemName}
+                                                    </td>
+
+                                                    <td style={{ padding: "14px 10px" }}>
+                                                        {item.quantity} {item.unit}
+                                                    </td>
+
+                                                    <td style={{ padding: "14px 10px" }}>
+
+                                                        <span style={{
+                                                            display: "inline-block",
+                                                            padding: "6px 12px",
+                                                            borderRadius: "20px",
+                                                            fontSize: "12px",
+                                                            fontWeight: "600",
+                                                            background: status.background,
+                                                            color: status.color,
                                                             whiteSpace: "nowrap"
-                                                        }}
-                                                    >
-                                                        {heading}
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                        </thead>
+                                                        }}>
+                                                            {status.label}
+                                                        </span>
 
-                                        <tbody>
-                                            {lowStockProducts.map((item) => {
-                                                const quantity = Number(item.quantity || 0);
-                                                const minimumStock = Number(item.minimumStock ?? 5);
-                                                const outOfStock = quantity <= 0;
+                                                    </td>
 
-                                                return (
-                                                    <tr key={item._id}>
-                                                        <td style={{ padding: "14px 10px" }}>
-                                                            {item.itemCode}
-                                                        </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
 
-                                                        <td style={{ padding: "14px 10px" }}>
-                                                            {item.itemName}
-                                                        </td>
+                                </table>
 
-                                                        <td style={{ padding: "14px 10px" }}>
-                                                            {item.department}
-                                                        </td>
-
-                                                        {/* AVAILABLE QUANTITY - NORMAL FONT */}
-                                                        <td style={{ padding: "14px 10px" }}>
-                                                            {quantity} {item.unit}
-                                                        </td>
-
-                                                        <td style={{ padding: "14px 10px" }}>
-                                                            {minimumStock} {item.unit}
-                                                        </td>
-
-                                                        <td style={{ padding: "14px 10px" }}>
-                                                            <span style={{
-                                                                display: "inline-block",
-                                                                padding: "6px 12px",
-                                                                borderRadius: "20px",
-                                                                fontSize: "12px",
-                                                                fontWeight: "600",
-                                                                whiteSpace: "nowrap",
-                                                                backgroundColor: outOfStock
-                                                                    ? "#fee2e2"
-                                                                    : "#fef3c7",
-                                                                color: outOfStock
-                                                                    ? "#b91c1c"
-                                                                    : "#92400e"
-                                                            }}>
-                                                                {outOfStock
-                                                                    ? "Out of Stock"
-                                                                    : "Low Stock"}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                ) : (
-                                    <div style={{
-                                        padding: "30px",
-                                        textAlign: "center"
-                                    }}>
-                                        <div style={{
-                                            color: "#16a34a",
-                                            marginBottom: "10px"
-                                        }}>
-                                            <Package size={35} />
-                                        </div>
-
-                                        <h3>All Stock Levels Are Good!</h3>
-
-                                        <p>
-                                            There are currently no products that need restocking.
-                                        </p>
-                                    </div>
-                                )}
                             </div>
+
+                        ) : (
+
+                            <div style={{
+                                padding: "30px",
+                                textAlign: "center"
+                            }}>
+
+                                <div style={{
+                                    color: "#16a34a",
+                                    marginBottom: "10px"
+                                }}>
+                                    <Package size={35} />
+                                </div>
+
+                                <h3>All Stock Levels Are Good!</h3>
+
+                                <p>
+                                    There are currently no products that need restocking.
+                                </p>
+
+                            </div>
+
                         )}
 
                         <div style={{
@@ -698,24 +802,27 @@ function Dashboard() {
                             justifyContent: "flex-end",
                             marginTop: "20px"
                         }}>
+
                             <button
                                 className="add-inventory-button"
                                 onClick={() => navigate("/inventory-list")}
                             >
                                 View Inventory
                             </button>
+
                         </div>
 
                     </div>
 
                     {/* FOOTER */}
                     <footer className="dashboard-footer">
-                        © 2026 KPD Company Inventory Tracker.
-                        All rights reserved.
+                        © 2026 KPD Store Inventory Tracker. All rights reserved.
                     </footer>
 
                 </section>
+
             </main>
+
         </div>
     );
 }

@@ -1,4 +1,3 @@
-
 import {
     BrowserRouter,
     Routes,
@@ -19,14 +18,34 @@ function ProtectedRoute({ children }) {
     return token ? children : <Navigate to="/" replace />;
 }
 
+function PublicRoute({ children }) {
+    const token = localStorage.getItem("token");
+
+    return token ? <Navigate to="/dashboard" replace /> : children;
+}
+
 function App() {
     return (
         <BrowserRouter>
             <Routes>
 
-                <Route path="/" element={<Login />} />
+                <Route
+                    path="/"
+                    element={
+                        <PublicRoute>
+                            <Login />
+                        </PublicRoute>
+                    }
+                />
 
-                <Route path="/signup" element={<SignUp />} />
+                <Route
+                    path="/signup"
+                    element={
+                        <PublicRoute>
+                            <SignUp />
+                        </PublicRoute>
+                    }
+                />
 
                 <Route
                     path="/dashboard"

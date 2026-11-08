@@ -4,6 +4,10 @@ import axios from "axios";
 import { Package, User, Mail, Lock } from "lucide-react";
 import "../App.css";
 
+const API_URL = (
+    import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
 function SignUp() {
     const navigate = useNavigate();
 
@@ -32,7 +36,7 @@ function SignUp() {
             setLoading(true);
 
             const response = await axios.post(
-                "http://localhost:5000/api/auth/register",
+                `${API_URL}/api/auth/register`,
                 {
                     name,
                     email,
@@ -40,14 +44,17 @@ function SignUp() {
                 }
             );
 
-            alert(response.data.message);
+            alert(response.data.message || "Account created successfully!");
             navigate("/");
 
         } catch (error) {
+            console.error("Sign Up Error:", error);
+
             setMessage(
                 error.response?.data?.message ||
                 "Unable to create account. Please try again."
             );
+
         } finally {
             setLoading(false);
         }
@@ -55,13 +62,14 @@ function SignUp() {
 
     return (
         <div className="login-container">
+
             <div className="login-card">
 
                 <div className="login-logo">
                     <Package size={45} />
                 </div>
 
-                <h1>KPD Company</h1>
+                <h1>KPD Store</h1>
                 <h2>Create Account</h2>
 
                 <p className="login-subtitle">
@@ -69,14 +77,18 @@ function SignUp() {
                 </p>
 
                 {message && (
-                    <p className="error-message">{message}</p>
+                    <p className="error-message">
+                        {message}
+                    </p>
                 )}
 
                 <form onSubmit={handleSignUp}>
 
                     <label>Full Name</label>
+
                     <div className="input-group">
                         <User size={18} />
+
                         <input
                             type="text"
                             placeholder="Enter your full name"
@@ -87,8 +99,10 @@ function SignUp() {
                     </div>
 
                     <label>Email Address</label>
+
                     <div className="input-group">
                         <Mail size={18} />
+
                         <input
                             type="email"
                             placeholder="Enter your email"
@@ -99,8 +113,10 @@ function SignUp() {
                     </div>
 
                     <label>Password</label>
+
                     <div className="input-group">
                         <Lock size={18} />
+
                         <input
                             type="password"
                             placeholder="Create a password"
@@ -111,8 +127,10 @@ function SignUp() {
                     </div>
 
                     <label>Confirm Password</label>
+
                     <div className="input-group">
                         <Lock size={18} />
+
                         <input
                             type="password"
                             placeholder="Confirm your password"
@@ -138,10 +156,11 @@ function SignUp() {
                 </div>
 
                 <p className="login-footer">
-                    KPD Company Inventory Tracker © 2026
+                    KPD Store Inventory Tracker © 2026
                 </p>
 
             </div>
+
         </div>
     );
 }

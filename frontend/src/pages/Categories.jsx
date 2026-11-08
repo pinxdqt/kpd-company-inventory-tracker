@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -13,6 +12,10 @@ import {
 } from "lucide-react";
 
 import "../App.css";
+
+const API_URL = (
+    import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
 
 function Categories() {
     const navigate = useNavigate();
@@ -50,7 +53,7 @@ function Categories() {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
-                "http://localhost:5000/api/inventory",
+                `${API_URL}/api/inventory`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -65,6 +68,7 @@ function Categories() {
                   [];
 
             setProducts(inventory);
+
         } catch (error) {
             console.error(
                 "Failed to load categories:",
@@ -72,6 +76,7 @@ function Categories() {
             );
 
             setError("Unable to load category information.");
+
         } finally {
             setLoading(false);
         }
@@ -214,12 +219,15 @@ function Categories() {
                                 Loading categories...
                             </p>
                         </div>
+
                     ) : error ? (
                         <div className="inventory-panel">
-                            <p style={{
-                                padding: "25px",
-                                color: "red"
-                            }}>
+                            <p
+                                style={{
+                                    padding: "25px",
+                                    color: "red"
+                                }}
+                            >
                                 {error}
                             </p>
 
@@ -230,13 +238,17 @@ function Categories() {
                                 Try Again
                             </button>
                         </div>
+
                     ) : (
-                        <div style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                            gap: "20px",
-                            marginTop: "20px"
-                        }}>
+                        <div
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(250px, 1fr))",
+                                gap: "20px",
+                                marginTop: "20px"
+                            }}
+                        >
 
                             {categories.map((category) => {
                                 const Icon = category.icon;
@@ -262,80 +274,101 @@ function Categories() {
                                             minHeight: "220px"
                                         }}
                                     >
-                                        <div style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            marginBottom: "20px"
-                                        }}>
-                                            <div style={{
-                                                width: "55px",
-                                                height: "55px",
+                                        <div
+                                            style={{
                                                 display: "flex",
                                                 alignItems: "center",
-                                                justifyContent: "center",
-                                                borderRadius: "12px",
-                                                backgroundColor: category.background,
-                                                color: category.color
-                                            }}>
+                                                justifyContent: "space-between",
+                                                marginBottom: "20px"
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    width: "55px",
+                                                    height: "55px",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    borderRadius: "12px",
+                                                    backgroundColor:
+                                                        category.background,
+                                                    color: category.color
+                                                }}
+                                            >
                                                 <Icon size={27} />
                                             </div>
 
-                                            <span style={{
-                                                fontSize: "13px",
-                                                color: "#64748b"
-                                            }}>
+                                            <span
+                                                style={{
+                                                    fontSize: "13px",
+                                                    color: "#64748b"
+                                                }}
+                                            >
                                                 Category
                                             </span>
                                         </div>
 
-                                        <h3 style={{
-                                            fontSize: "20px",
-                                            marginBottom: "8px"
-                                        }}>
+                                        <h3
+                                            style={{
+                                                fontSize: "20px",
+                                                marginBottom: "8px"
+                                            }}
+                                        >
                                             {category.name}
                                         </h3>
 
-                                        <p style={{
-                                            color: "#64748b",
-                                            fontSize: "14px",
-                                            marginBottom: "18px"
-                                        }}>
+                                        <p
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "14px",
+                                                marginBottom: "18px"
+                                            }}
+                                        >
                                             {category.description}
                                         </p>
 
-                                        <div style={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            gap: "10px",
-                                            marginBottom: "18px"
-                                        }}>
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                gap: "10px",
+                                                marginBottom: "18px"
+                                            }}
+                                        >
                                             <div>
-                                                <strong style={{
-                                                    fontSize: "23px"
-                                                }}>
+                                                <strong
+                                                    style={{
+                                                        fontSize: "23px"
+                                                    }}
+                                                >
                                                     {categoryProducts.length}
                                                 </strong>
 
-                                                <p style={{
-                                                    fontSize: "13px",
-                                                    color: "#64748b"
-                                                }}>
+                                                <p
+                                                    style={{
+                                                        fontSize: "13px",
+                                                        color: "#64748b"
+                                                    }}
+                                                >
                                                     Products
                                                 </p>
                                             </div>
 
                                             <div>
-                                                <strong style={{
-                                                    fontSize: "23px"
-                                                }}>
+                                                <strong
+                                                    style={{
+                                                        fontSize: "23px"
+                                                    }}
+                                                >
                                                     {totalQuantity}
                                                 </strong>
 
-                                                <p style={{
-                                                    fontSize: "13px",
-                                                    color: "#64748b"
-                                                }}>
+                                                <p
+                                                    style={{
+                                                        fontSize: "13px",
+                                                        color: "#64748b"
+                                                    }}
+                                                >
                                                     Total Stock
                                                 </p>
                                             </div>

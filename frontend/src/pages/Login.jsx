@@ -4,6 +4,10 @@ import axios from "axios";
 import { Package, Lock, Mail } from "lucide-react";
 import "../App.css";
 
+const API_URL = (
+    import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
 function Login() {
     const navigate = useNavigate();
 
@@ -20,11 +24,15 @@ function Login() {
             setMessage("");
 
             const response = await axios.post(
-                "http://localhost:5000/api/auth/login",
-                { email, password }
+                `${API_URL}/api/auth/login`,
+                {
+                    email,
+                    password
+                }
             );
 
             localStorage.setItem("token", response.data.token);
+
             localStorage.setItem(
                 "user",
                 JSON.stringify(response.data.user)
@@ -33,10 +41,13 @@ function Login() {
             navigate("/dashboard");
 
         } catch (error) {
+            console.error("Login Error:", error);
+
             setMessage(
                 error.response?.data?.message ||
-                "Unable to connect to the server."
+                "Unable to connect to the server. Please try again."
             );
+
         } finally {
             setLoading(false);
         }
@@ -44,18 +55,20 @@ function Login() {
 
     return (
         <div className="login-container">
+
             <div className="login-card">
 
                 <div className="login-logo">
                     <Package size={45} />
                 </div>
 
-                <h1>KPD Company</h1>
+                <h1>KPD Store</h1>
                 <h2>Inventory Tracker</h2>
 
-
                 {message && (
-                    <p className="error-message">{message}</p>
+                    <p className="error-message">
+                        {message}
+                    </p>
                 )}
 
                 <form onSubmit={handleLogin}>
@@ -64,6 +77,7 @@ function Login() {
 
                     <div className="input-group">
                         <Mail size={18} />
+
                         <input
                             type="email"
                             placeholder="Enter your email"
@@ -77,6 +91,7 @@ function Login() {
 
                     <div className="input-group">
                         <Lock size={18} />
+
                         <input
                             type="password"
                             placeholder="Enter your password"
@@ -85,7 +100,6 @@ function Login() {
                             required
                         />
                     </div>
-
 
                     <button type="submit" disabled={loading}>
                         {loading ? "Logging in..." : "Login"}
@@ -101,10 +115,11 @@ function Login() {
                 </div>
 
                 <p className="login-footer">
-                    KPD Company Inventory Tracker © 2026
+                    KPD Store Inventory Tracker © 2026
                 </p>
 
             </div>
+
         </div>
     );
 }

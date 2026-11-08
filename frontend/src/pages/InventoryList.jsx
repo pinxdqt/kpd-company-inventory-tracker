@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -16,6 +15,10 @@ import {
 } from "lucide-react";
 
 import "../App.css";
+
+const API_URL = (
+    import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
 
 function InventoryList() {
     const navigate = useNavigate();
@@ -40,8 +43,7 @@ function InventoryList() {
         quantity: "",
         unit: "",
         price: "",
-        supplier: "",
-        minimumStock: ""
+        supplier: ""
     });
 
     // GET LOGGED-IN USER
@@ -57,8 +59,14 @@ function InventoryList() {
 
             const token = localStorage.getItem("token");
 
+            if (!token) {
+                setError("Your login session has expired. Please log in again.");
+                setLoading(false);
+                return;
+            }
+
             const response = await axios.get(
-                "http://localhost:5000/api/inventory",
+                `${API_URL}/api/inventory`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -92,29 +100,28 @@ function InventoryList() {
         fetchInventory();
     }, []);
 
-    // CHECK PRODUCT STOCK STATUS
+    // SIMPLE STOCK STATUS
     const getStockStatus = (item) => {
         const quantity = Number(item.quantity || 0);
-        const minimumStock = Number(item.minimumStock ?? 5);
 
         if (quantity <= 0) {
             return {
-                label: "Out of Stock",
+                label: "No Stock",
                 background: "#fee2e2",
                 color: "#b91c1c"
             };
         }
 
-        if (quantity <= minimumStock) {
+        if (quantity <= 10) {
             return {
-                label: "Low Stock",
+                label: "Restock Soon!",
                 background: "#fef3c7",
                 color: "#92400e"
             };
         }
 
         return {
-            label: "In Stock",
+            label: "Enough Stock",
             background: "#dcfce7",
             color: "#166534"
         };
@@ -144,8 +151,7 @@ function InventoryList() {
             quantity: item.quantity ?? 0,
             unit: item.unit || "",
             price: item.price ?? 0,
-            supplier: item.supplier || "",
-            minimumStock: item.minimumStock ?? 5
+            supplier: item.supplier || ""
         });
 
         setEditError("");
@@ -179,15 +185,19 @@ function InventoryList() {
 
             const token = localStorage.getItem("token");
 
+            if (!token) {
+                setEditError("Your login session has expired. Please log in again.");
+                return;
+            }
+
             const updatedData = {
                 ...formData,
                 quantity: Number(formData.quantity),
-                price: Number(formData.price),
-                minimumStock: Number(formData.minimumStock)
+                price: Number(formData.price)
             };
 
             await axios.put(
-                `http://localhost:5000/api/inventory/${editingId}`,
+                `${API_URL}/api/inventory/${editingId}`,
                 updatedData,
                 {
                     headers: {
@@ -229,8 +239,13 @@ function InventoryList() {
         try {
             const token = localStorage.getItem("token");
 
+            if (!token) {
+                alert("Your login session has expired. Please log in again.");
+                return;
+            }
+
             await axios.delete(
-                `http://localhost:5000/api/inventory/${id}`,
+                `${API_URL}/api/inventory/${id}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -276,7 +291,7 @@ function InventoryList() {
                     </div>
 
                     <div>
-                        <h2>KPD Company Inventory Tracker</h2>
+                        <h2>KPD Store Inventory Tracker</h2>
                     </div>
                 </div>
 
@@ -351,7 +366,7 @@ function InventoryList() {
 
                     <div>
                         <p>
-                            Manage your company inventory products
+                            Manage your store inventory products
                         </p>
                     </div>
 
@@ -362,6 +377,8 @@ function InventoryList() {
                             <input
                                 type="text"
                                 placeholder="Search..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
                     </div>
@@ -440,7 +457,7 @@ function InventoryList() {
                                         <h2>Edit Inventory Product</h2>
 
                                         <p>
-                                            Update the product information below.
+                                            Update the product information below
                                         </p>
                                     </div>
 
@@ -526,6 +543,7 @@ function InventoryList() {
                                                 type="number"
                                                 name="quantity"
                                                 min="0"
+                                                step="1"
                                                 value={formData.quantity}
                                                 onChange={handleInputChange}
                                                 required
@@ -566,19 +584,6 @@ function InventoryList() {
                                                 name="supplier"
                                                 value={formData.supplier}
                                                 onChange={handleInputChange}
-                                                style={inputStyle}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label>Minimum Stock</label>
-                                            <input
-                                                type="number"
-                                                name="minimumStock"
-                                                min="0"
-                                                value={formData.minimumStock}
-                                                onChange={handleInputChange}
-                                                required
                                                 style={inputStyle}
                                             />
                                         </div>
@@ -814,7 +819,7 @@ function InventoryList() {
                     </button>
 
                     <footer className="dashboard-footer">
-                        © 2026 KPD Company Inventory Tracker.
+                        © 2026 KPD Store Inventory Tracker.
                         All rights reserved.
                     </footer>
 

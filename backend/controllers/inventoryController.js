@@ -103,19 +103,24 @@ const getInventorySummary = async (req, res) => {
             ? stockResult[0].total
             : 0;
 
+        // Low stock means 1 to 10 items remaining
         const lowStock = await Inventory.countDocuments({
-            $expr: {
-                $lte: ["$quantity", "$minimumStock"]
+            quantity: {
+                $gte: 1,
+                $lte: 10
             }
         });
 
-        const departments = await Inventory.distinct("department");
+        // Count items with no stock
+        const outOfStock = await Inventory.countDocuments({
+            quantity: 0
+        });
 
         res.status(200).json({
             totalProducts,
             totalStock,
             lowStock,
-            totalDepartments: departments.length
+            outOfStock
         });
 
     } catch (error) {
