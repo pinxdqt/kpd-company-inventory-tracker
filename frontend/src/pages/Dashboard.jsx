@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -173,7 +173,7 @@ function Dashboard() {
                     </div>
 
                     <div>
-                        <h2>KPD Store Inventory Tracker</h2>
+                        <h2>KPD Inventory Tracker</h2>
                     </div>
                 </div>
 
@@ -244,7 +244,7 @@ function Dashboard() {
                 <header className="dashboard-topbar">
 
                     <div>
-                        <p>Manage and monitor your store inventory</p>
+                        <p>Manage and monitor your inventory</p>
                     </div>
 
                     <div className="dashboard-search">
@@ -371,7 +371,7 @@ function Dashboard() {
                                                     </td>
 
                                                     <td style={{ padding: "14px 10px" }}>
-                                                        ₱{formatPrice(item.price)}
+                                                        â‚±{formatPrice(item.price)}
                                                     </td>
 
                                                 </tr>
@@ -600,7 +600,7 @@ function Dashboard() {
                                                 </td>
 
                                                 <td style={{ padding: "14px 10px" }}>
-                                                    ₱{formatPrice(item.price)}
+                                                    â‚±{formatPrice(item.price)}
                                                 </td>
 
                                             </tr>
@@ -816,7 +816,7 @@ function Dashboard() {
 
                     {/* FOOTER */}
                     <footer className="dashboard-footer">
-                        © 2026 KPD Store Inventory Tracker. All rights reserved.
+                        Â© 2026 KPD Inventory Tracker. All rights reserved.
                     </footer>
 
                 </section>

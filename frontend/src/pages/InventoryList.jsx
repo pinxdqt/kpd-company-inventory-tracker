@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -291,7 +291,7 @@ function InventoryList() {
                     </div>
 
                     <div>
-                        <h2>KPD Store Inventory Tracker</h2>
+                        <h2>KPD Inventory Tracker</h2>
                     </div>
                 </div>
 
@@ -366,7 +366,7 @@ function InventoryList() {
 
                     <div>
                         <p>
-                            Manage your store inventory products
+                            Manage your inventory products
                         </p>
                     </div>
 
@@ -564,7 +564,7 @@ function InventoryList() {
                                         </div>
 
                                         <div>
-                                            <label>Price (₱)</label>
+                                            <label>Price (â‚±)</label>
                                             <input
                                                 type="number"
                                                 name="price"
@@ -741,7 +741,7 @@ function InventoryList() {
                                                     </td>
 
                                                     <td style={{ padding: "14px 10px" }}>
-                                                        ₱{Number(item.price || 0).toLocaleString("en-PH", {
+                                                        â‚±{Number(item.price || 0).toLocaleString("en-PH", {
                                                             minimumFractionDigits: 2
                                                         })}
                                                     </td>
@@ -750,7 +750,7 @@ function InventoryList() {
                                                         padding: "14px 10px",
                                                         minWidth: "200px"
                                                     }}>
-                                                        {item.description || "—"}
+                                                        {item.description || "â€”"}
                                                     </td>
 
                                                     <td style={{
@@ -819,7 +819,7 @@ function InventoryList() {
                     </button>
 
                     <footer className="dashboard-footer">
-                        © 2026 KPD Store Inventory Tracker.
+                        Â© 2026 KPD Inventory Tracker.
                         All rights reserved.
                     </footer>
 

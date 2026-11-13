@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { Package, Lock, Mail } from "lucide-react";
@@ -62,7 +62,7 @@ function Login() {
                     <Package size={45} />
                 </div>
 
-                <h1>KPD Store</h1>
+                <h1>KPD</h1>
                 <h2>Inventory Tracker</h2>
 
                 {message && (
@@ -115,7 +115,7 @@ function Login() {
                 </div>
 
                 <p className="login-footer">
-                    KPD Store Inventory Tracker © 2026
+                    KPD Inventory Tracker Â© 2026
                 </p>
 
             </div>

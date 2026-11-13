@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -105,7 +105,7 @@ function Categories() {
                     </div>
 
                     <div>
-                        <h2>KPD Company Inventory Tracker</h2>
+                        <h2>KPD Inventory Tracker</h2>
                     </div>
                 </div>
 
@@ -392,7 +392,7 @@ function Categories() {
 
                     {/* FOOTER */}
                     <footer className="dashboard-footer">
-                        © 2026 KPD Company Inventory Tracker.
+                        Â© 2026 KPD Inventory Tracker.
                         All rights reserved.
                     </footer>
 
