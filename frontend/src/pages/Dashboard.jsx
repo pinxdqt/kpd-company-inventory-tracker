@@ -371,7 +371,7 @@ function Dashboard() {
                                                     </td>
 
                                                     <td style={{ padding: "14px 10px" }}>
-                                                        â‚±{formatPrice(item.price)}
+                                                        ₱{formatPrice(item.price)}
                                                     </td>
 
                                                 </tr>
@@ -600,7 +600,7 @@ function Dashboard() {
                                                 </td>
 
                                                 <td style={{ padding: "14px 10px" }}>
-                                                    â‚±{formatPrice(item.price)}
+                                                    ₱{formatPrice(item.price)}
                                                 </td>
 
                                             </tr>

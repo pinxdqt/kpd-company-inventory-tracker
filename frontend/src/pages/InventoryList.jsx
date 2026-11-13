@@ -564,7 +564,7 @@ function InventoryList() {
                                         </div>
 
                                         <div>
-                                            <label>Price (â‚±)</label>
+                                            <label>Price (₱)</label>
                                             <input
                                                 type="number"
                                                 name="price"
@@ -741,7 +741,7 @@ function InventoryList() {
                                                     </td>
 
                                                     <td style={{ padding: "14px 10px" }}>
-                                                        â‚±{Number(item.price || 0).toLocaleString("en-PH", {
+                                                        ₱{Number(item.price || 0).toLocaleString("en-PH", {
                                                             minimumFractionDigits: 2
                                                         })}
                                                     </td>
